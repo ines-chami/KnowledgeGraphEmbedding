@@ -59,7 +59,7 @@ class KGEModel(nn.Module):
             self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
         
         #Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE']:
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'ReflectionE']:
             raise ValueError('model %s not supported' % model_name)
             
         if model_name == 'RotatE' and (not double_entity_embedding or double_relation_embedding):
@@ -152,7 +152,8 @@ class KGEModel(nn.Module):
             'DistMult': self.DistMult,
             'ComplEx': self.ComplEx,
             'RotatE': self.RotatE,
-            'pRotatE': self.pRotatE
+            'pRotatE': self.pRotatE,
+            'ReflectionE': self.ReflectionE,
         }
         
         if self.model_name in model_func:
@@ -169,6 +170,15 @@ class KGEModel(nn.Module):
             score = (head + relation) - tail
 
         score = self.gamma.item() - torch.norm(score, p=1, dim=2)
+        return score
+
+    def RotationE(self, head, relation, tail, mode):
+        pass
+
+    def ReflectionE(self, head, relation, tail, mode):
+        relation_norm = relation / torch.norm(relation, p=2, dim=-1, keepdim=True)
+        pred = head - 2 * torch.sum(relation_norm * head, dim=-1, keepdim=True) * relation_norm
+        score = self.gamma.item() - torch.norm(pred - tail, p=1, dim=2)
         return score
 
     def DistMult(self, head, relation, tail, mode):

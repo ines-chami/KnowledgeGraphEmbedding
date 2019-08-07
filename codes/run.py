@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import datetime
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ import random
 import numpy as np
 import torch
 
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
 from model import KGEModel
@@ -157,7 +159,18 @@ def log_metrics(mode, step, metrics):
     for metric in metrics:
         logging.info('%s %s at step %d: %f' % (mode, metric, step, metrics[metric]))
         
-        
+def write_metrics(writer, step, metrics, split=None):
+    '''
+    Writes metrics to tensorboard logs
+    '''
+    for metric in metrics:
+        if split is not None:
+            metric_name = '{}_{}'.format(split, metric)
+        else:
+            metric_name = metric
+        writer.add_scalar(metric_name, metrics[metric], global_step=step)
+
+    
 def main(args):
     if (not args.do_train) and (not args.do_valid) and (not args.do_test):
         raise ValueError('one of train/val/test mode must be choosed.')
@@ -168,14 +181,19 @@ def main(args):
         raise ValueError('one of init_checkpoint/data_path must be choosed.')
 
     if args.do_train and args.save_path is None:
-        raise ValueError('Where do you want to save your trained model?')
+        # create default save directory
+        dt = datetime.datetime.now()
+        args.save_path = os.path.join(os.environ['LOG_DIR'], args.data_path.split('/')[-1], '{}_{}_{}_{}_{}'.format(dt.month, dt.year, dt.hour, dt.minute, dt.second))
+        logging.info('save directory: {}'.format(args.save_path))
+        # raise ValueError('Where do you want to save your trained model?')
     
     if args.save_path and not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
     
     # Write logs to checkpoint and console
     set_logger(args)
-    
+    writer = SummaryWriter(log_dir=args.save_path)    
+
     with open(os.path.join(args.data_path, 'entities.dict')) as fin:
         entity2id = dict()
         for line in fin:
@@ -302,8 +320,9 @@ def main(args):
         for step in range(init_step, args.max_steps):
             
             log = kge_model.train_step(kge_model, optimizer, train_iterator, args)
-            
             training_logs.append(log)
+            write_metrics(writer, step, log, split='train')
+            write_metrics(writer, step, {'current_learning_rate': current_learning_rate})
             
             if step >= warm_up_steps:
                 current_learning_rate = current_learning_rate / 10
@@ -327,18 +346,21 @@ def main(args):
                 for metric in training_logs[0].keys():
                     metrics[metric] = sum([log[metric] for log in training_logs])/len(training_logs)
                 log_metrics('Training average', step, metrics)
+                write_metrics(writer, step, metrics, split='train')
                 training_logs = []
                 
             if args.do_valid and step % args.valid_steps == 0:
                 logging.info('Evaluating on Valid Dataset...')
                 metrics = kge_model.test_step(kge_model, valid_triples, all_true_triples, args)
                 log_metrics('Valid', step, metrics)
-        
+                write_metrics(writer, step, metrics, split='valid')
+
         save_variable_list = {
             'step': step, 
             'current_learning_rate': current_learning_rate,
             'warm_up_steps': warm_up_steps
         }
+
         save_model(kge_model, optimizer, save_variable_list, args)
         
     if args.do_valid:
