@@ -185,7 +185,6 @@ def main(args):
         # create default save directory
         dt = datetime.datetime.now()
         args.save_path = os.path.join(os.environ['LOG_DIR'], args.data_path.split('/')[-1], args.model, datetime.datetime.now().strftime('%m%d%H%M%S'))
-        logging.info('save directory: {}'.format(args.save_path))
         # raise ValueError('Where do you want to save your trained model?')
     
     if args.save_path and not os.path.exists(args.save_path):
@@ -224,9 +223,11 @@ def main(args):
     
     logging.info('Model: %s' % args.model)
     logging.info('Data Path: %s' % args.data_path)
+    logging.info('Save Path: {}'.format(args.save_path))
     logging.info('#entity: %d' % nentity)
     logging.info('#relation: %d' % nrelation)
-    
+   
+ 
     train_triples = read_triple(os.path.join(args.data_path, 'train.txt'), entity2id, relation2id)
     logging.info('#train: %d' % len(train_triples))
     valid_triples = read_triple(os.path.join(args.data_path, 'valid.txt'), entity2id, relation2id)

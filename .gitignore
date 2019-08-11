@@ -1,3 +1,5 @@
 checkpoint
 *.npy
 *.log
+.idea/*xml
+.idea/*iml
