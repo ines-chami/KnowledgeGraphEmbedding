@@ -20,13 +20,14 @@ from dataloader import TestDataset
 
 class KGEModel(nn.Module):
     def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, 
-                 double_entity_embedding=False, double_relation_embedding=False):
+                 dropout, double_entity_embedding=False, double_relation_embedding=False):
         super(KGEModel, self).__init__()
         self.model_name = model_name
         self.nentity = nentity
         self.nrelation = nrelation
         self.hidden_dim = hidden_dim
         self.epsilon = 2.0
+        self.dropout = dropout
         
         self.gamma = nn.Parameter(
             torch.Tensor([gamma]), 
@@ -157,6 +158,9 @@ class KGEModel(nn.Module):
         }
         
         if self.model_name in model_func:
+            head = F.dropout(head, self.dropout, training=self.training)
+            relation = F.dropout(relation, self.dropout, training=self.training)
+            tail = F.dropout(tail, self.dropout, training=self.training)
             score = model_func[self.model_name](head, relation, tail, mode)
         else:
             raise ValueError('model %s not supported' % self.model_name)

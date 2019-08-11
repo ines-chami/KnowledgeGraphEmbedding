@@ -60,6 +60,7 @@ def parse_args(args=None):
     parser.add_argument('-init', '--init_checkpoint', default=None, type=str)
     parser.add_argument('-save', '--save_path', default=None, type=str)
     parser.add_argument('--max_steps', default=100000, type=int)
+    parser.add_argument('--dropout', default=0, type=float)
     parser.add_argument('--warm_up_steps', default=None, type=int)
     
     parser.add_argument('--save_checkpoint_steps', default=10000, type=int)
@@ -183,7 +184,7 @@ def main(args):
     if args.do_train and args.save_path is None:
         # create default save directory
         dt = datetime.datetime.now()
-        args.save_path = os.path.join(os.environ['LOG_DIR'], args.data_path.split('/')[-1], '{}_{}_{}_{}_{}'.format(dt.month, dt.year, dt.hour, dt.minute, dt.second))
+        args.save_path = os.path.join(os.environ['LOG_DIR'], args.data_path.split('/')[-1], args.model, datetime.datetime.now().strftime('%m%d%H%M%S'))
         logging.info('save directory: {}'.format(args.save_path))
         # raise ValueError('Where do you want to save your trained model?')
     
@@ -242,6 +243,7 @@ def main(args):
         nrelation=nrelation,
         hidden_dim=args.hidden_dim,
         gamma=args.gamma,
+        dropout=args.dropout,
         double_entity_embedding=args.double_entity_embedding,
         double_relation_embedding=args.double_relation_embedding
     )
@@ -308,6 +310,7 @@ def main(args):
     logging.info('hidden_dim = %d' % args.hidden_dim)
     logging.info('gamma = %f' % args.gamma)
     logging.info('negative_adversarial_sampling = %s' % str(args.negative_adversarial_sampling))
+    logging.info('dropout = %f' % args.dropout)
     if args.negative_adversarial_sampling:
         logging.info('adversarial_temperature = %f' % args.adversarial_temperature)
     
