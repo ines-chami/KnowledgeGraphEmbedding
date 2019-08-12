@@ -14,21 +14,21 @@ import scipy.stats as stats
 
 USE_CUDA = True
 GPU = 0
-DOUBLE_ENTITY = False
-DOUBLE_RELATIONS = False
 ADV = True
 
 config_args = {
+    # 'model': ['ReflectionE'],
     'model': ['TransE'],
-    'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
-    'batch_size': [512],
-    'negative_sample_size': [1024],
+    #'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
+    'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/FB15k-237'],
+    'batch_size': [1024],
+    'negative_sample_size': [256],
     'hidden_dim': [500, 1000],
-    'gamma': [6.0],
-    'adversarial_temperature': [0.5],
+    'gamma': [9.0],
+    'adversarial_temperature': [1.0],
     'learning_rate': [0.00005],
-    'max_steps': [80000],
-    'test_batch_size': [8],
+    'max_steps': [100000],
+    'test_batch_size': [16],
     'dropout': [0, 0.25, 0.5],
     #'regularization': [],
     'cpu_num': [10],
@@ -38,6 +38,8 @@ config_args = {
     'valid_steps': [10000],
     'log_steps': [100],
     'test_log_steps': [1000],
+    'entity_embedding_multiple' : [1],
+    'relation_embedding_multiple': [1]
     # early stop, L2 reg, lr_decay
 }
 

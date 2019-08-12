@@ -17,10 +17,11 @@ from sklearn.metrics import average_precision_score
 from torch.utils.data import DataLoader
 
 from dataloader import TestDataset
+from utils import householder_reflection, householder_rotation
 
 class KGEModel(nn.Module):
     def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, 
-                 dropout, double_entity_embedding=False, double_relation_embedding=False):
+                 dropout, entity_embedding_multiple, relation_embedding_multiple):
         super(KGEModel, self).__init__()
         self.model_name = model_name
         self.nentity = nentity
@@ -39,8 +40,8 @@ class KGEModel(nn.Module):
             requires_grad=False
         )
         
-        self.entity_dim = hidden_dim*2 if double_entity_embedding else hidden_dim
-        self.relation_dim = hidden_dim*2 if double_relation_embedding else hidden_dim
+        self.entity_dim = hidden_dim * entity_embedding_multiple
+        self.relation_dim = hidden_dim * relation_embedding_multiple
         
         self.entity_embedding = nn.Parameter(torch.zeros(nentity, self.entity_dim))
         nn.init.uniform_(
@@ -60,14 +61,20 @@ class KGEModel(nn.Module):
             self.modulus = nn.Parameter(torch.Tensor([[0.5 * self.embedding_range.item()]]))
         
         #Do not forget to modify this line when you add a new model in the "forward" function
-        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'ReflectionE']:
+        if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'ReflectionE', 'RotationE']:
             raise ValueError('model %s not supported' % model_name)
+        
+        if model_name == 'RotationE' and not relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
+            raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
             
-        if model_name == 'RotatE' and (not double_entity_embedding or double_relation_embedding):
-            raise ValueError('RotatE should use --double_entity_embedding')
+        if model_name == 'ReflectionE' relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
+            raise ValueError('ReflectionE should use double relationship embeddings (center and one reflection)')
+        
+        if model_name == 'RotatE' and (entity_embedding_multiple - 2 * relation_embedding_multiple != 0):
+            raise ValueError('RotatE should use even hidden dimensions for entity embeddings (twice relationship embeddings)')
 
-        if model_name == 'ComplEx' and (not double_entity_embedding or not double_relation_embedding):
-            raise ValueError('ComplEx should use --double_entity_embedding and --double_relation_embedding')
+        if model_name == 'ComplEx' and (not entity_embedding_multiple == relation_embedding_multiple or relation_embedding_multiple % 2 != 0):
+            raise ValueError('ComplEx should use even hidden dimensions for entity and relation embeddings')
         
     def forward(self, sample, mode='single'):
         '''
@@ -177,12 +184,23 @@ class KGEModel(nn.Module):
         return score
 
     def RotationE(self, head, relation, tail, mode):
-        pass
+        '''
+        Euclidean rotation model with real numbers using two Householder reflections
+        '''
+        center, v1, v2 = torch.chunk(relation, 3, dim=2) 
+        prediction = householder_rotation(head - center, v1, v2) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=1, dim=2)
+        return score
 
     def ReflectionE(self, head, relation, tail, mode):
-        relation_norm = relation / torch.norm(relation, p=2, dim=-1, keepdim=True)
-        pred = head - 2 * torch.sum(relation_norm * head, dim=-1, keepdim=True) * relation_norm
-        score = self.gamma.item() - torch.norm(pred - tail, p=1, dim=2)
+        '''
+        Euclidean reflection model using one Householder reflection
+        '''
+        # TODO: add head-batch thing
+        center, v = torch.chunk(relation, 2, dim=2)
+        prediction = householder_reflection(head - center, v) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=1, dim=2)
+        # TODO: add pnorm in config
         return score
 
     def DistMult(self, head, relation, tail, mode):

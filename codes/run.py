@@ -41,8 +41,8 @@ def parse_args(args=None):
     
     parser.add_argument('--data_path', type=str, default=None)
     parser.add_argument('--model', default='TransE', type=str)
-    parser.add_argument('-de', '--double_entity_embedding', action='store_true')
-    parser.add_argument('-dr', '--double_relation_embedding', action='store_true')
+    parser.add_argument('--entity_embedding_multiple', type=int, default=1)
+    parser.add_argument('--relation_embedding_multiple', type=int, default=1)
     
     parser.add_argument('-n', '--negative_sample_size', default=128, type=int)
     parser.add_argument('-d', '--hidden_dim', default=500, type=int)
@@ -85,8 +85,8 @@ def override_config(args):
     if args.data_path is None:
         args.data_path = argparse_dict['data_path']
     args.model = argparse_dict['model']
-    args.double_entity_embedding = argparse_dict['double_entity_embedding']
-    args.double_relation_embedding = argparse_dict['double_relation_embedding']
+    args.entity_embedding_multiple = argparse_dict['entity_embedding_multiple']
+    args.relation_embedding_multiple = argparse_dict['relation_embedding_multiple']
     args.hidden_dim = argparse_dict['hidden_dim']
     args.test_batch_size = argparse_dict['test_batch_size']
     
@@ -245,8 +245,8 @@ def main(args):
         hidden_dim=args.hidden_dim,
         gamma=args.gamma,
         dropout=args.dropout,
-        double_entity_embedding=args.double_entity_embedding,
-        double_relation_embedding=args.double_relation_embedding
+        entity_embedding_multiple=args.entity_embedding_multiple,
+        relation_embedding_multiple=args.relation_embedding_multiple
     )
     
     logging.info('Model Parameter Configuration:')
