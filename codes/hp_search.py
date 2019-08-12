@@ -37,8 +37,9 @@ config_args = {
     'log_steps': [100],
     'test_log_steps': [1000],
     'entity_embedding_multiple' : [1],
-    'relation_embedding_multiple': [1]
-    # TODO: early stop, lr_decay, regularization
+    'relation_embedding_multiple': [1],
+    'regularization': [0.0]
+    # TODO: early stop, lr_decay
 }
 
 def launch():
