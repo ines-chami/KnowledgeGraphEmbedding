@@ -65,7 +65,7 @@ class KGEModel(nn.Module):
         if model_name not in ['TransE', 'DistMult', 'ComplEx', 'RotatE', 'pRotatE', 'ReflectionE', 'RotationE']:
             raise ValueError('model %s not supported' % model_name)
         
-        if model_name == 'RotationE' and not relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
+        if model_name == 'RotationE' and relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
             raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
             
         if model_name == 'ReflectionE' and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
