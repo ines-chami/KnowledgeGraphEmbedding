@@ -4,7 +4,7 @@ python -u -c 'import torch; print(torch.__version__)'
 
 CODE_PATH=codes
 DATA_PATH=data
-SAVE_PATH=models
+#SAVE_PATH=models
 
 #The first four parameters must be provided
 MODE=$1
@@ -14,7 +14,6 @@ GPU_DEVICE=$4
 SAVE_ID=$5
 
 FULL_DATA_PATH=$DATA_PATH/$DATASET
-SAVE=$SAVE_PATH/"$MODEL"_"$DATASET"_"$SAVE_ID"
 
 #Only used in training
 BATCH_SIZE=$6
@@ -40,7 +39,7 @@ CUDA_VISIBLE_DEVICES=$GPU_DEVICE python -u $CODE_PATH/run.py --do_train \
     -n $NEGATIVE_SAMPLE_SIZE -b $BATCH_SIZE -d $HIDDEN_DIM \
     -g $GAMMA -a $ALPHA -adv \
     -lr $LEARNING_RATE --max_steps $MAX_STEPS \
-    -save $SAVE --test_batch_size $TEST_BATCH_SIZE \
+    --test_batch_size $TEST_BATCH_SIZE \
     ${14} ${15} ${16} ${17} ${18} ${19} ${20}
 
 elif [ $MODE == "valid" ]

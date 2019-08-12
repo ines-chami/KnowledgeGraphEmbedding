@@ -163,6 +163,7 @@ class KGEModel(nn.Module):
             'RotatE': self.RotatE,
             'pRotatE': self.pRotatE,
             'ReflectionE': self.ReflectionE,
+            'RotationE': self.RotationE,
         }
         
         if self.model_name in model_func:
