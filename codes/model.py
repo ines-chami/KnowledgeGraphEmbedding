@@ -68,8 +68,8 @@ class KGEModel(nn.Module):
         if model_name == 'RotationE' and not relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
             raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
             
-        if model_name == 'ReflectionE' relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
-            raise ValueError('ReflectionE should use double relationship embeddings (center and one reflection)')
+        if model_name == 'ReflectionE' and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
+            raise ValueError('ReflectionE should double relationship embeddings (center and one reflection)')
         
         if model_name == 'RotatE' and (entity_embedding_multiple - 2 * relation_embedding_multiple != 0):
             raise ValueError('RotatE should use even hidden dimensions for entity embeddings (twice relationship embeddings)')

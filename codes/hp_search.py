@@ -17,10 +17,10 @@ GPU = 0
 ADV = True
 
 config_args = {
-    # 'model': ['ReflectionE'],
-    'model': ['TransE'],
-    #'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
-    'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/FB15k-237'],
+    'model': ['ReflectionE'],
+    # 'model': ['TransE'],
+    'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
+    # 'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/FB15k-237'],
     'batch_size': [1024],
     'negative_sample_size': [256],
     'hidden_dim': [500, 1000],
@@ -31,17 +31,14 @@ config_args = {
     'test_batch_size': [16],
     'dropout': [0, 0.25, 0.5],
     'p_norm': [1],
-    #'regularization': [],
     'cpu_num': [10],
-    # 'save_path': [None],
-    # 'warm_up_steps': [None],
     'save_checkpoint_steps': [10000],
     'valid_steps': [10000],
     'log_steps': [100],
     'test_log_steps': [1000],
     'entity_embedding_multiple' : [1],
     'relation_embedding_multiple': [1]
-    # early stop, L2 reg, lr_decay
+    # TODO: early stop, lr_decay, regularization
 }
 
 def launch():
@@ -50,16 +47,12 @@ def launch():
         params = dict(zip(config_args.keys(), params))
         args = ' '.join(["--{} {} ".format(x, str(params[x])) for x, _ in params.items()])
         train_command = 'CUDA_VISIBLE_DEVICES={} python -u codes/run.py --do_train --do_valid --do_test '.format(GPU) + args
-        if DOUBLE_ENTITY:
-            train_command += ' -de'
-        if DOUBLE_RELATIONS:
-            train_command += ' -dr'
         if USE_CUDA:
             train_command += ' --cuda'
         if ADV:
-            train_command += ' -adv'  # TODO: check + adversarial temperature
+            train_command += ' -adv'
         print(train_command)
-        subprocess.call(train_command, shell=True)
+        # subprocess.call(train_command, shell=True)
     return True
     
 if __name__ == '__main__':
