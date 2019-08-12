@@ -62,6 +62,7 @@ def parse_args(args=None):
     parser.add_argument('--max_steps', default=100000, type=int)
     parser.add_argument('--dropout', default=0, type=float)
     parser.add_argument('--warm_up_steps', default=None, type=int)
+    parser.add_argument('--p_norm', default=1, type=int, help='p norm for scoring function')
     
     parser.add_argument('--save_checkpoint_steps', default=10000, type=int)
     parser.add_argument('--valid_steps', default=10000, type=int)
@@ -244,6 +245,7 @@ def main(args):
         nrelation=nrelation,
         hidden_dim=args.hidden_dim,
         gamma=args.gamma,
+        p_norm=args.p_norm,
         dropout=args.dropout,
         entity_embedding_multiple=args.entity_embedding_multiple,
         relation_embedding_multiple=args.relation_embedding_multiple

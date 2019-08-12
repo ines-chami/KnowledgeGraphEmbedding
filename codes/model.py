@@ -20,7 +20,7 @@ from dataloader import TestDataset
 from utils import householder_reflection, householder_rotation
 
 class KGEModel(nn.Module):
-    def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, 
+    def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, p_norm, 
                  dropout, entity_embedding_multiple, relation_embedding_multiple):
         super(KGEModel, self).__init__()
         self.model_name = model_name
@@ -29,6 +29,7 @@ class KGEModel(nn.Module):
         self.hidden_dim = hidden_dim
         self.epsilon = 2.0
         self.dropout = dropout
+        self.p_norm = p_norm
         
         self.gamma = nn.Parameter(
             torch.Tensor([gamma]), 
@@ -180,7 +181,7 @@ class KGEModel(nn.Module):
         else:
             score = (head + relation) - tail
 
-        score = self.gamma.item() - torch.norm(score, p=1, dim=2)
+        score = self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
         return score
 
     def RotationE(self, head, relation, tail, mode):
@@ -189,7 +190,7 @@ class KGEModel(nn.Module):
         '''
         center, v1, v2 = torch.chunk(relation, 3, dim=2) 
         prediction = householder_rotation(head - center, v1, v2) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=1, dim=2)
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
         return score
 
     def ReflectionE(self, head, relation, tail, mode):
@@ -199,8 +200,7 @@ class KGEModel(nn.Module):
         # TODO: add head-batch thing
         center, v = torch.chunk(relation, 2, dim=2)
         prediction = householder_reflection(head - center, v) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=1, dim=2)
-        # TODO: add pnorm in config
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
         return score
 
     def DistMult(self, head, relation, tail, mode):

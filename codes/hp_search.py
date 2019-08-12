@@ -30,6 +30,7 @@ config_args = {
     'max_steps': [100000],
     'test_batch_size': [16],
     'dropout': [0, 0.25, 0.5],
+    'p_norm': [1],
     #'regularization': [],
     'cpu_num': [10],
     # 'save_path': [None],
