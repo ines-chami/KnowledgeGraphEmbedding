@@ -174,19 +174,27 @@ class EKGEModel(KGEModel):
         Euclidean rotation model with real numbers using two Householder reflections
         '''
         center, v1, v2 = torch.chunk(relation, 3, dim=2)
-        prediction = householder_rotation(head - center, v1, v2) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-        return score
+        if mode == 'head-batch':
+            # inverse rotation
+            head_pred = householder_rotation(tail - center, v2, v1) + center
+            score = head - head_pred
+        else:
+            tail_pred = householder_rotation(head - center, v1, v2) + center
+            score = tail_pred - tail
+        return self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
 
     def ReflectionE(self, head, relation, tail, mode):
         '''
         Euclidean reflection model using one Householder reflection
         '''
-        # TODO: add head-batch thing
         center, v = torch.chunk(relation, 2, dim=2)
-        prediction = householder_reflection(head - center, v) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-        return score
+        if mode == 'head-batch':
+            head_pred = householder_reflection(tail - center, v) + center
+            score = head - head_pred
+        else:
+            tail_pred = householder_reflection(head - center, v) + center
+            score = tail_pred - tail
+        return self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
 
     def DistMult(self, head, relation, tail, mode):
         if mode == 'head-batch':
