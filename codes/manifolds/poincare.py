@@ -6,8 +6,8 @@ from __future__ import print_function
 
 import torch
 
-from manifolds import Manifold
-from utils import artanh, tanh
+from utils.math_utils import artanh, tanh
+from .base import Manifold
 
 
 class Poincare(Manifold):

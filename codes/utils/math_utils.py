@@ -30,6 +30,9 @@ def householder_rotation(x, v1, v2):
 
 # Hyperbolic utils
 
+def tanh(x, clamp=15):
+    return x.clamp(-clamp, clamp).tanh()
+
 class Artanh(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):

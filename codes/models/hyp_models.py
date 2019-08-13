@@ -10,8 +10,8 @@ import torch.nn.functional as F
 
 from models.base import KGEModel
 
-from manifolds import ManifoldParameter, PoincareBall
-from utils import householder_reflection, householder_rotation
+from manifolds import ManifoldParameter, Poincare
+from utils.math_utils import householder_reflection, householder_rotation
 
 
 class HKGEModel(KGEModel):
@@ -28,7 +28,7 @@ class HKGEModel(KGEModel):
             requires_grad=False
         )
 
-        self.manifold = PoincareBall()
+        self.manifold = Poincare()
         self.entity_dim = hidden_dim * entity_embedding_multiple
         self.relation_dim = hidden_dim
         self.entity_embedding = ManifoldParameter(manifold=self.manifold,
@@ -47,11 +47,11 @@ class HKGEModel(KGEModel):
             b=self.embedding_range.item()
         )
 
-    if model_name in ['RotationH'] and relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
-        raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
+        if model_name in ['RotationH'] and relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
+            raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
 
-    if model_name in ['ReflectionH'] and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
-        raise ValueError('ReflectionE should double relationship embeddings (center and one reflection)')
+        if model_name in ['ReflectionH'] and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
+            raise ValueError('ReflectionE should double relationship embeddings (center and one reflection)')
 
 
 def forward(self, sample, mode='single'):

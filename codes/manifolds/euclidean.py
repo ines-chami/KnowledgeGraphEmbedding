@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import torch
 
-from manifolds import Manifold
+from .base import Manifold
 
 
 class Euclidean(Manifold):
@@ -24,7 +24,7 @@ class Euclidean(Manifold):
         return w
 
     def distance(self, p1, p2):
-        return torch.dqrt((p1 - p2).pow(2).sum(dim=-1))
+        return torch.sqrt((p1 - p2).pow(2).sum(dim=-1))
 
     def egrad2rgrad(self, p, dp):
         return dp
