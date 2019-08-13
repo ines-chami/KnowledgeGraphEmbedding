@@ -204,6 +204,36 @@ class KGEModel(nn.Module):
         score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
         return score
 
+    def TranslationH(self, head, relation, tail, mode):
+        '''
+        Hyperbolic translation model
+        '''
+        if mode == 'head-batch':
+            score = head + (relation - tail)
+        else:
+            score = (head + relation) - tail
+
+        score = self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
+        return score
+
+    def RotationH(self, head, relation, tail, mode):
+        '''
+        Hyperbolic rotation model with real numbers using two Householder reflections
+        '''
+        center, v1, v2 = torch.chunk(relation, 3, dim=2)
+        prediction = householder_rotation(head - center, v1, v2) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
+        return score
+
+    def ReflectionH(self, head, relation, tail, mode):
+        '''
+        Hyperbolic reflection model using one Householder reflection
+        '''
+        center, v = torch.chunk(relation, 2, dim=2)
+        prediction = householder_reflection(head - center, v) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
+        return score
+
     def DistMult(self, head, relation, tail, mode):
         if mode == 'head-batch':
             score = head * (relation * tail)

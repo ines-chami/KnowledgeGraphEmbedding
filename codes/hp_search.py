@@ -17,20 +17,21 @@ GPU = 0
 ADV = True
 
 config_args = {
-    'model': ['ReflectionE'],
-    # 'model': ['TransE'],
+    # 'model': ['ReflectionE'],
+    # 'model': ['RotationE'],
+    'model': ['TransE'],
     'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
     # 'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/FB15k-237'],
-    'batch_size': [1024],
-    'negative_sample_size': [256],
+    'batch_size': [512],
+    'negative_sample_size': [1024],
     'hidden_dim': [500, 1000],
-    'gamma': [9.0],
-    'adversarial_temperature': [1.0],
+    'gamma': [6.0],
+    'adversarial_temperature': [0.5],
     'learning_rate': [0.00005],
-    'max_steps': [100000],
-    'test_batch_size': [16],
+    'max_steps': [80000],
+    'test_batch_size': [8],
     'dropout': [0, 0.25, 0.5],
-    'p_norm': [1],
+    'p_norm': [1, 2],
     'cpu_num': [10],
     'save_checkpoint_steps': [10000],
     'valid_steps': [10000],
@@ -38,7 +39,7 @@ config_args = {
     'test_log_steps': [1000],
     'entity_embedding_multiple' : [1],
     'relation_embedding_multiple': [1],
-    'regularization': [0.0]
+    'regularization': [0.0, 0.000005]
     # TODO: early stop, lr_decay
 }
 
@@ -53,7 +54,7 @@ def launch():
         if ADV:
             train_command += ' -adv'
         print(train_command)
-        # subprocess.call(train_command, shell=True)
+        subprocess.call(train_command, shell=True)
     return True
     
 if __name__ == '__main__':

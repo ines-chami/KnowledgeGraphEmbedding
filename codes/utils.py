@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import torch
 
+# Euclidean utils
 
 def batch_dot(x1, x2):
     return torch.sum(x1 * x2, dim=-1, keepdim=True)
@@ -22,4 +23,15 @@ def householder_rotation(x, v1, v2):
     v2Tx = batch_dot(v2, x)
     v1Tv2 = batch_dot(v1, v2)
     return x - 2 * v1Tx * v1 - 2 * v2Tx * v2 + 4 * v1Tv2 * v2Tx * v1
+
+# Hyperbolic utils
+
+def distance(x, y, c):
+    pass
+
+def mobius_add(x, y, c):
+    pass
+
+def egrad2rgrad(x, dx, c):
+    pass
 
