@@ -30,6 +30,7 @@ class EKGEModel(KGEModel):
         self.relation_dim = hidden_dim * relation_embedding_multiple
 
         self.entity_embedding = nn.Parameter(torch.zeros(nentity, self.entity_dim))
+        # TODO: try xavier
         nn.init.uniform_(
             tensor=self.entity_embedding,
             a=-self.embedding_range.item(),

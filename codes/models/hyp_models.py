@@ -29,162 +29,176 @@ class HKGEModel(KGEModel):
         )
 
         self.manifold = Poincare()
-        self.entity_dim = hidden_dim * entity_embedding_multiple
-        self.relation_dim = hidden_dim
+
+        # Initialize entity hyperbolic embeddings
         self.entity_embedding = ManifoldParameter(manifold=self.manifold,
-                                                  data=torch.zeros(nentity, self.entity_dim))
+                                                  data=torch.zeros(nentity, hidden_dim))
         nn.init.uniform_(
             tensor=self.entity_embedding,
             a=-self.embedding_range.item(),
             b=self.embedding_range.item()
         )
 
-        self.relation_embedding = ManifoldParameter(manifold=self.manifold,
-                                                    data=torch.zeros(nrelation, self.relation_dim))
+        # Initialize relation center as hyperbolic embeddings
+        self.relation_center = ManifoldParameter(manifold=self.manifold,
+                                                 data=torch.zeros(nrelation, hidden_dim))
         nn.init.uniform_(
             tensor=self.relation_embedding,
             a=-self.embedding_range.item(),
             b=self.embedding_range.item()
         )
 
-        if model_name in ['RotationH'] and relation_embedding_multiple - 3 * entity_embedding_multiple != 0:
+        # Reflection and rotation parameters are Euclidean vector
+        self.relation_transforms = nn.Parameter(
+            data=torch.zeros(nrelation, hidden_dim * (relation_embedding_multiple - 1)))
+        nn.init.xavier_uniform(self.relation_transforms.weight)
+
+        if model_name in ['RotationH'] and (relation_embedding_multiple != 3 or entity_embedding_multiple != 1):
             raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
 
-        if model_name in ['ReflectionH'] and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
+        if model_name in ['ReflectionH'] and (relation_embedding_multiple != 2 or entity_embedding_multiple != 1):
             raise ValueError('ReflectionE should double relationship embeddings (center and one reflection)')
 
+    def forward(self, sample, mode='single'):
+        '''
+        Forward function that calculate the score of a batch of triples.
+        In the 'single' mode, sample is a batch of triple.
+        In the 'head-batch' or 'tail-batch' mode, sample consists two part.
+        The first part is usually the positive sample.
+        And the second part is the entities in the negative samples.
+        Because negative samples and positive samples usually share two elements
+        in their triple ((head, relation) or (relation, tail)).
+        '''
 
-def forward(self, sample, mode='single'):
-    '''
-    Forward function that calculate the score of a batch of triples.
-    In the 'single' mode, sample is a batch of triple.
-    In the 'head-batch' or 'tail-batch' mode, sample consists two part.
-    The first part is usually the positive sample.
-    And the second part is the entities in the negative samples.
-    Because negative samples and positive samples usually share two elements
-    in their triple ((head, relation) or (relation, tail)).
-    '''
+        if mode == 'single':
+            batch_size, negative_sample_size = sample.size(0), 1
 
-    if mode == 'single':
-        batch_size, negative_sample_size = sample.size(0), 1
+            head = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=sample[:, 0]
+            ).unsqueeze(1)
 
-        head = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=sample[:, 0]
-        ).unsqueeze(1)
+            relation_center = torch.index_select(
+                self.relation_center,
+                dim=0,
+                index=sample[:, 1]
+            ).unsqueeze(1)
 
-        relation = torch.index_select(
-            self.relation_embedding,
-            dim=0,
-            index=sample[:, 1]
-        ).unsqueeze(1)
+            relation_transforms = torch.index_select(
+                self.relation_transforms,
+                dim=0,
+                index=sample[:, 1]
+            ).unsqueeze(1)
 
-        tail = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=sample[:, 2]
-        ).unsqueeze(1)
+            tail = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=sample[:, 2]
+            ).unsqueeze(1)
 
-    elif mode == 'head-batch':
-        tail_part, head_part = sample
-        batch_size, negative_sample_size = head_part.size(0), head_part.size(1)
+        elif mode == 'head-batch':
+            tail_part, head_part = sample
+            batch_size, negative_sample_size = head_part.size(0), head_part.size(1)
 
-        head = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=head_part.view(-1)
-        ).view(batch_size, negative_sample_size, -1)
+            head = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=head_part.view(-1)
+            ).view(batch_size, negative_sample_size, -1)
 
-        relation = torch.index_select(
-            self.relation_embedding,
-            dim=0,
-            index=tail_part[:, 1]
-        ).unsqueeze(1)
+            relation_center = torch.index_select(
+                self.relation_center,
+                dim=0,
+                index=tail_part[:, 1]
+            ).unsqueeze(1)
 
-        tail = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=tail_part[:, 2]
-        ).unsqueeze(1)
+            relation_transforms = torch.index_select(
+                self.relation_transforms,
+                dim=0,
+                index=tail_part[:, 1]
+            ).unsqueeze(1)
 
-    elif mode == 'tail-batch':
-        head_part, tail_part = sample
-        batch_size, negative_sample_size = tail_part.size(0), tail_part.size(1)
+            tail = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=tail_part[:, 2]
+            ).unsqueeze(1)
 
-        head = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=head_part[:, 0]
-        ).unsqueeze(1)
+        elif mode == 'tail-batch':
+            head_part, tail_part = sample
+            batch_size, negative_sample_size = tail_part.size(0), tail_part.size(1)
 
-        relation = torch.index_select(
-            self.relation_embedding,
-            dim=0,
-            index=head_part[:, 1]
-        ).unsqueeze(1)
+            head = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=head_part[:, 0]
+            ).unsqueeze(1)
 
-        tail = torch.index_select(
-            self.entity_embedding,
-            dim=0,
-            index=tail_part.view(-1)
-        ).view(batch_size, negative_sample_size, -1)
+            relation_center = torch.index_select(
+                self.relation_center,
+                dim=0,
+                index=head_part[:, 1]
+            ).unsqueeze(1)
 
-    else:
-        raise ValueError('mode %s not supported' % mode)
+            relation_transforms = torch.index_select(
+                self.relation_transforms,
+                dim=0,
+                index=head_part[:, 1]
+            ).unsqueeze(1)
 
-    model_func = {
-        'TransE': self.TransE,
-        'DistMult': self.DistMult,
-        'ComplEx': self.ComplEx,
-        'RotatE': self.RotatE,
-        'pRotatE': self.pRotatE,
-        'ReflectionE': self.ReflectionE,
-        'RotationE': self.RotationE,
-        'TranslationH': self.TranslationH,
-        'ReflectionH': self.ReflectionH,
-        'RotationH': self.RotationH,
-    }
+            tail = torch.index_select(
+                self.entity_embedding,
+                dim=0,
+                index=tail_part.view(-1)
+            ).view(batch_size, negative_sample_size, -1)
 
-    if self.model_name in model_func:
-        head = F.dropout(head, self.dropout, training=self.training)
-        relation = F.dropout(relation, self.dropout, training=self.training)
-        tail = F.dropout(tail, self.dropout, training=self.training)
-        score = model_func[self.model_name](head, relation, tail, mode)
-    else:
-        raise ValueError('model %s not supported' % self.model_name)
+        else:
+            raise ValueError('mode %s not supported' % mode)
 
-    return score
+        model_func = {
+            'TranslationH': self.TranslationH,
+            'ReflectionH': self.ReflectionH,
+            'RotationH': self.RotationH,
+        }
 
+        if self.model_name in model_func:
+            head = F.dropout(head, self.dropout, training=self.training)
+            relation_center = F.dropout(relation_center, self.dropout, training=self.training)
+            relation_center = F.dropout(relation_center, self.dropout, training=self.training)
+            relation_transforms = F.dropout(relation_transforms, self.dropout, training=self.training)
+            score = model_func[self.model_name](head, relation_center, relation_transforms, tail, mode)
+        else:
+            raise ValueError('model %s not supported' % self.model_name)
 
-def TranslationH(self, head, relation, tail, mode):
-    '''
-    Hyperbolic translation model
-    '''
-    if mode == 'head-batch':
-        score = head + (relation - tail)
-    else:
-        score = (head + relation) - tail
+        return score
 
-    score = self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
-    return score
+    def TranslationH(self, head, relation_center, relation_transforms, tail, mode):
+        '''
+        Hyperbolic translation model
+        '''
+        if mode == 'head-batch':
+            score = head + (relation_center - tail)
+        else:
+            score = (head + relation_center) - tail
 
+        score = self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
+        return score
 
-def RotationH(self, head, relation, tail, mode):
-    '''
-    Hyperbolic rotation model with real numbers using two Householder reflections
-    '''
-    center, v1, v2 = torch.chunk(relation, 3, dim=2)
-    prediction = householder_rotation(head - center, v1, v2) + center
-    score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-    return score
+    def RotationH(self, head, relation_center, relation_transforms, tail, mode):
+        '''
+        Hyperbolic rotation model with real numbers using two Householder reflections
+        '''
+        center, v1, v2 = torch.chunk(relation, 3, dim=2)
+        prediction = householder_rotation(head - center, v1, v2) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
+        return score
 
-
-def ReflectionH(self, head, relation, tail, mode):
-    '''
-    Hyperbolic reflection model using one Householder reflection
-    '''
-    center, v = torch.chunk(relation, 2, dim=2)
-    prediction = householder_reflection(head - center, v) + center
-    score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-    return score
+    def ReflectionH(self, head, relation_center, relation_transforms, tail, mode):
+        '''
+        Hyperbolic reflection model using one Householder reflection
+        '''
+        center, v = torch.chunk(relation, 2, dim=2)
+        prediction = householder_reflection(head - center, v) + center
+        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
+        return score

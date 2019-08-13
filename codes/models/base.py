@@ -88,6 +88,7 @@ class KGEModel(nn.Module):
 
         if args.regularization != 0.0:
             # Use L3 regularization for ComplEx and DistMult
+            # TODO: check other norms
             regularization = args.regularization * (
                     model.entity_embedding.norm(p=3) ** 3 +
                     model.relation_embedding.norm(p=3).norm(p=3) ** 3
