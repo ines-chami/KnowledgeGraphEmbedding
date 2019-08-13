@@ -29,10 +29,6 @@ class Manifold(object):
     def __init__(self):
         super().__init__()
 
-    def init_weights(self, w, irange=1e-5):
-        """Initializes random weigths on the manifold."""
-        raise NotImplementedError
-
     def distance(self, p1, p2):
         """Distance between pairs of points."""
         raise NotImplementedError

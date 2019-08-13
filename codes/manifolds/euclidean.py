@@ -18,11 +18,6 @@ class Euclidean(Manifold):
         super(Euclidean, self).__init__()
         self.name = 'Euclidean'
 
-    def init_weights(self, w, irange=1e-5):
-        # TODO: xavier init
-        w.data.uniform_(-irange, irange)
-        return w
-
     def distance(self, p1, p2):
         return torch.sqrt((p1 - p2).pow(2).sum(dim=-1))
 

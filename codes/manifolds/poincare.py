@@ -26,10 +26,6 @@ class Poincare(Manifold):
         self.min_norm = 1e-15
         self.c = torch.tensor([c])
 
-    def init_weights(self, w, irange=1e-5):
-        w.data.uniform_(-irange, irange)
-        return w
-
     def distance(self, p1, p2):
         keepdim = False
         dim = -1
