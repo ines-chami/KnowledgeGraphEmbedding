@@ -72,7 +72,7 @@ class RiemannianAdam(OptimMixin, torch.optim.Adam):
         https://openreview.net/forum?id=ryQu7f-RZ
     """
 
-    def step(self, closure):
+    def step(self, closure=None):
         """Performs a single optimization step.
         Arguments
         ---------
@@ -98,10 +98,8 @@ class RiemannianAdam(OptimMixin, torch.optim.Adam):
                         continue
                     if isinstance(point, (ManifoldParameter)):
                         manifold = point.manifold
-                        c = point.c
                     else:
                         manifold = _default_manifold
-                        c = None
                     if grad.is_sparse:
                         raise RuntimeError(
                                 "Riemannian Adam does not support sparse gradients yet (PR is welcome)"
@@ -124,10 +122,10 @@ class RiemannianAdam(OptimMixin, torch.optim.Adam):
                     exp_avg_sq = state["exp_avg_sq"]
                     # actual step
                     grad.add_(weight_decay, point)
-                    grad = manifold.egrad2rgrad(point, grad, c)
+                    grad = manifold.egrad2rgrad(point, grad)
                     exp_avg.mul_(betas[0]).add_(1 - betas[0], grad)
                     exp_avg_sq.mul_(betas[1]).add_(
-                            1 - betas[1], manifold.inner(point, c, grad, keepdim=True)
+                            1 - betas[1], manifold.inner(point, grad, keepdim=True)
                     )
                     if amsgrad:
                         max_exp_avg_sq = state["max_exp_avg_sq"]
@@ -148,8 +146,8 @@ class RiemannianAdam(OptimMixin, torch.optim.Adam):
                     # get the direction for ascend
                     direction = exp_avg / denom
                     # transport the exponential averaging to the new point
-                    new_point = manifold.proj(manifold.expmap(-step_size * direction, point, c), c)
-                    exp_avg_new = manifold.ptransp(point, new_point, exp_avg, c)
+                    new_point = manifold.proj(manifold.expmap(-step_size * direction, point))
+                    exp_avg_new = manifold.ptransp(point, new_point, exp_avg)
                     # use copy only for user facing point
                     copy_or_set_(point, new_point)
                     exp_avg.set_(exp_avg_new)
@@ -168,7 +166,6 @@ class RiemannianAdam(OptimMixin, torch.optim.Adam):
             if not state:  # due to None grads
                 continue
             manifold = p.manifold
-            c = p.c
             exp_avg = state["exp_avg"]
-            copy_or_set_(p, manifold.proj(p, c))
-            exp_avg.set_(manifold.proj_tan(exp_avg, u, c))
+            copy_or_set_(p, manifold.proj(p))
+            exp_avg.set_(manifold.proj_tan(exp_avg, u))

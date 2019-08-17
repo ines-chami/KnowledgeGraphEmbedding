@@ -38,7 +38,7 @@ class Artanh(torch.autograd.Function):
     def forward(ctx, x):
         x = x.clamp(-1 + 1e-15, 1 - 1e-15)
         ctx.save_for_backward(x)
-        x = x.double()
+        #x = x.double()
         return (torch.log_(1 + x).sub_(torch.log_(1 - x))).mul_(0.5).to(x.dtype)
 
     @staticmethod

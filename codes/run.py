@@ -17,7 +17,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
-from models import EKGEModel, HKGEModel, EUC_MODELS,HYP_MODELS
+from models import KGEModelE, KGEModelH, EUC_MODELS,HYP_MODELS
 
 from dataloader import TrainDataset
 from dataloader import BidirectionalOneShotIterator
@@ -112,17 +112,19 @@ def save_model(model, optimizer, save_variable_list, args):
         os.path.join(args.save_path, 'checkpoint')
     )
 
-    entity_embedding = model.entity_embedding.detach().cpu().numpy()
-    np.save(
-        os.path.join(args.save_path, 'entity_embedding'),
-        entity_embedding
-    )
+    if False:
+        # TODO: only save checkpoint for now
+        entity_embedding = model.entity_embedding.detach().cpu().numpy()
+        np.save(
+            os.path.join(args.save_path, 'entity_embedding'),
+            entity_embedding
+        )
 
-    relation_embedding = model.relation_embedding.detach().cpu().numpy()
-    np.save(
-        os.path.join(args.save_path, 'relation_embedding'),
-        relation_embedding
-    )
+        relation_embedding = model.relation_embedding.detach().cpu().numpy()
+        np.save(
+            os.path.join(args.save_path, 'relation_embedding'),
+            relation_embedding
+        )
 
 
 def read_triple(file_path, entity2id, relation2id):
@@ -204,8 +206,7 @@ def main(args):
     if args.do_train and args.save_path is None:
         # create default save directory
         dt = datetime.datetime.now()
-        args.save_path = os.path.join(os.environ['LOG_DIR'], args.data_path.split('/')[-1], args.model,
-                                      datetime.datetime.now().strftime('%m%d%H%M%S'))
+        args.save_path = os.path.join(os.environ['LOG_DIR'], dt.strftime('%m_%d'), args.data_path.split('/')[-1], args.model + dt.strftime('_%H_%M_%S'))
         # raise ValueError('Where do you want to save your trained model?')
 
     if args.save_path and not os.path.exists(args.save_path):
@@ -259,9 +260,9 @@ def main(args):
     all_true_triples = train_triples + valid_triples + test_triples
 
     if args.model in EUC_MODELS:
-        ModelClass = EKGEModel
+        ModelClass = KGEModelE
     elif args.model in HYP_MODELS:
-        ModelClass = HKGEModel
+        ModelClass = KGEModelH
     else:
         raise ValueError('model %s not supported' % args.model)
 

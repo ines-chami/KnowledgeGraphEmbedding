@@ -12,14 +12,14 @@ from models.base import KGEModel
 from utils.math_utils import householder_reflection, householder_rotation
 
 
-class EKGEModel(KGEModel):
+class KGEModelE(KGEModel):
     """
     Euclidean knowledge graph embedding model
     """
 
     def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, p_norm,
                  dropout, entity_embedding_multiple, relation_embedding_multiple):
-        super(EKGEModel, self).__init__(model_name, nentity, nrelation, hidden_dim, gamma, p_norm, dropout)
+        super(KGEModelE, self).__init__(model_name, nentity, nrelation, hidden_dim, gamma, p_norm, dropout)
 
         self.embedding_range = nn.Parameter(
             torch.Tensor([(self.gamma.item() + self.epsilon) / hidden_dim]),

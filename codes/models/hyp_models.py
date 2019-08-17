@@ -14,14 +14,14 @@ from manifolds import ManifoldParameter, Poincare
 from utils.math_utils import householder_reflection, householder_rotation
 
 
-class HKGEModel(KGEModel):
+class KGEModelH(KGEModel):
     """
     Hyperbolic knowledge graph embedding model
     """
 
     def __init__(self, model_name, nentity, nrelation, hidden_dim, gamma, p_norm,
                  dropout, entity_embedding_multiple, relation_embedding_multiple):
-        super(HKGEModel, self).__init__(model_name, nentity, nrelation, hidden_dim, gamma, p_norm, dropout)
+        super(KGEModelH, self).__init__(model_name, nentity, nrelation, hidden_dim, gamma, p_norm, dropout)
 
         self.embedding_range = nn.Parameter(
             torch.Tensor([(self.gamma.item() + self.epsilon) / hidden_dim]),
@@ -43,7 +43,7 @@ class HKGEModel(KGEModel):
         self.relation_center = ManifoldParameter(manifold=self.manifold,
                                                  data=torch.zeros(nrelation, hidden_dim))
         nn.init.uniform_(
-            tensor=self.relation_embedding,
+            tensor=self.relation_center,
             a=-self.embedding_range.item(),
             b=self.embedding_range.item()
         )
@@ -51,7 +51,7 @@ class HKGEModel(KGEModel):
         # Reflection and rotation parameters are Euclidean vector
         self.relation_transforms = nn.Parameter(
             data=torch.zeros(nrelation, hidden_dim * (relation_embedding_multiple - 1)))
-        nn.init.xavier_uniform(self.relation_transforms.weight)
+        nn.init.xavier_uniform(self.relation_transforms.data)
 
         if model_name in ['RotationH'] and (relation_embedding_multiple != 3 or entity_embedding_multiple != 1):
             raise ValueError('RotationE should triple relationship embeddings (center and two reflections)')
@@ -178,27 +178,19 @@ class HKGEModel(KGEModel):
         Hyperbolic translation model
         '''
         if mode == 'head-batch':
-            score = head + (relation_center - tail)
+            score = self.manifold.distance(self.manifold.add(-relation_center, tail), head)
         else:
-            score = (head + relation_center) - tail
-
-        score = self.gamma.item() - torch.norm(score, p=self.p_norm, dim=2)
-        return score
+            score = self.manifold.distance(self.manifold.add(head, relation_center), tail)
+        return self.gamma.item() - score
 
     def RotationH(self, head, relation_center, relation_transforms, tail, mode):
         '''
         Hyperbolic rotation model with real numbers using two Householder reflections
         '''
-        center, v1, v2 = torch.chunk(relation, 3, dim=2)
-        prediction = householder_rotation(head - center, v1, v2) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-        return score
+        raise NotImplementedError
 
     def ReflectionH(self, head, relation_center, relation_transforms, tail, mode):
         '''
         Hyperbolic reflection model using one Householder reflection
         '''
-        center, v = torch.chunk(relation, 2, dim=2)
-        prediction = householder_reflection(head - center, v) + center
-        score = self.gamma.item() - torch.norm(prediction - tail, p=self.p_norm, dim=2)
-        return score
+        raise NotImplementedError
