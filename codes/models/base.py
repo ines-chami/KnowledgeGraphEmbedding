@@ -11,6 +11,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pdb
+
 
 from sklearn.metrics import average_precision_score
 
@@ -97,6 +99,8 @@ class KGEModel(nn.Module):
             regularization_log = {'regularization': regularization.item()}
         else:
             regularization_log = {}
+
+        #pdb.set_trace()
 
         loss.backward()
 
