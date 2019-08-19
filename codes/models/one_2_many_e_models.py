@@ -48,7 +48,7 @@ class O2MEKGEModel(KGEModel):
 
         #added num of siblings, rho
         self.nsiblings = nsiblings
-        self.nsiblings_vec = torch.tensor([i for i in range(-nsiblings, nsiblings+1, 1)]).type(torch.FloatTensor).cuda()
+        self.nsiblings_vec = torch.tensor([i for i in range(-nsiblings, nsiblings+1, 1)]).view(1,-1,1).type(torch.FloatTensor).cuda()
         self.rho = rho
 
         if model_name == 'One2ManyTransE' and relation_embedding_multiple - 2 * entity_embedding_multiple != 0:
@@ -163,13 +163,27 @@ class O2MEKGEModel(KGEModel):
         '''
         center, sibling = torch.chunk(relation, 2, dim=2)
         if mode == 'head-batch':
-            head_pred_v =  -center.unsqueeze(-1) + tail.unsqueeze(-1) + torch.matmul(sibling.unsqueeze(-1),self.nsiblings_vec.unsqueeze(0))
-            scores = -self.rho * torch.norm(head_pred_v - head.unsqueeze(-1), p=self.p_norm, dim=2)
+
+            head_pred_v = (tail - center) + torch.matmul(self.nsiblings_vec, sibling)
+            head_T_head = torch.matmul(head.unsqueeze(2), head.unsqueeze(-1)).squeeze(-1)
+            head_pred_v_T_head_pred_v =  torch.matmul(head_pred_v.unsqueeze(2), head_pred_v.unsqueeze(-1)).squeeze(-1).squeeze(-1).unsqueeze(1)
+            head_T_head_pred_v = torch.matmul(head, head_pred_v.view(-1, self.entity_dim, 2*self.nsiblings +1))
+
+            scores_l_2 = -self.rho * (head_T_head + head_pred_v_T_head_pred_v - 2 * head_T_head_pred_v)
+
         else:
             #pdb.set_trace()
-            tail_pred_v = head.unsqueeze(-1) + center.unsqueeze(-1) + torch.matmul(sibling.unsqueeze(-1),self.nsiblings_vec.unsqueeze(0))
-            scores = -self.rho*torch.norm(tail_pred_v - tail.unsqueeze(-1), p=self.p_norm, dim=2)
-        return self.gamma.item() + (1/self.rho) * torch.logsumexp(scores, dim=-1)
+            # sibling, head, center (B,1,d)
+            # nsiblings_vec (1, 2N+1, 1)
+            # tail (B, Ne, d)
+
+            tail_pred_v = (head + center) + torch.matmul(self.nsiblings_vec, sibling) #(B, 2N+1, d)
+            tail_T_tail = torch.matmul(tail.unsqueeze(2), tail.unsqueeze(-1)).squeeze(-1) #(B, Ne, 1)
+            tail_pred_v_T_tail_pred_v = torch.matmul(tail_pred_v.unsqueeze(2), tail_pred_v.unsqueeze(-1)).squeeze(-1).squeeze(-1).unsqueeze(1) #(B, 1, 2N+1)
+            tail_T_tail_pred_v =  torch.matmul(tail, tail_pred_v.view(-1, self.entity_dim, 2*self.nsiblings +1)) #(B, Ne, 2N+1)
+
+            scores_l_2 = -self.rho*(tail_T_tail+ tail_pred_v_T_tail_pred_v -2*tail_T_tail_pred_v)
+        return self.gamma.item() + (1/self.rho) * torch.logsumexp(scores_l_2, dim=-1)
 
 
 
