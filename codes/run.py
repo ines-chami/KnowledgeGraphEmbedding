@@ -17,7 +17,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
-from models import KGEModelE, KGEModelH, EUC_MODELS,HYP_MODELS
+from models import KGEModelE, KGEModelH, EUC_MODELS, HYP_MODELS
 
 from dataloader import TrainDataset
 from dataloader import BidirectionalOneShotIterator

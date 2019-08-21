@@ -18,7 +18,7 @@ ADV = True
 
 config_args = {
     #'model': ['TransE'],
-    'model': ['TranslationH'],
+    'model': ['TranslationEH'],
     'data_path': ['/dfs/scratch0/chami/KnowledgeGraphEmbedding/data/wn18rr'],
     'batch_size': [1024],
     'negative_sample_size': [1024],

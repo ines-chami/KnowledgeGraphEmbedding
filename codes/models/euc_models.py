@@ -9,8 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.base import KGEModel
-from utils.math_utils import householder_reflection, householder_rotation
-
+from utils.euc_utils import householder_reflection, householder_rotation
+from utils.hyp_utils import expmap, mobius_add, hyp_distance
 
 class KGEModelE(KGEModel):
     """
@@ -148,6 +148,7 @@ class KGEModelE(KGEModel):
             'pRotatE': self.pRotatE,
             'ReflectionE': self.ReflectionE,
             'RotationE': self.RotationE,
+            'TranslationEH': self.TranslationEH
         }
 
         if self.model_name in model_func:
@@ -159,6 +160,18 @@ class KGEModelE(KGEModel):
             raise ValueError('model %s not supported' % self.model_name)
 
         return score
+
+    def TranslationEH(self, head, relation, tail, mode):
+        head = expmap0(head)
+        relation = expmap0(relation)
+        tail = expmap0(tail)
+        if mode == 'head-batch':
+            queries = mobius_add(-relation, tail)
+            candidates = head
+        else:
+            queries = mobius_add(relation, head)
+            candidates = tail
+        return self.gamma.item() - hyp_distance(queries, candidates) ** 2
 
     def TransE(self, head, relation, tail, mode):
         if mode == 'head-batch':

@@ -7,17 +7,22 @@ from __future__ import print_function
 import torch
 
 
-# Euclidean utils
+def euc_sqdistance(x, y):
+    return torch.sum((x - y) ** 2, dim=1, keepdim=True)
+
+def pariwise_euc_sqdistance(x, y):
+    x2 = torch.sum(x * x, dim=1, keepdim=True)
+    y2 = torch.sum(y * y, dim=1, keepdim=True).t()
+    xTy = x @ y.t()
+    return x2 + y2 - 2 * xTy
 
 def batch_dot(x1, x2):
     return torch.sum(x1 * x2, dim=-1, keepdim=True)
-
 
 def householder_reflection(x, v):
     v = v / torch.norm(v, p=2, dim=-1, keepdim=True)
     vTx = batch_dot(v, x)
     return x - 2 * vTx * v
-
 
 def householder_rotation(x, v1, v2):
     v1 = v1 / torch.norm(v1, p=2, dim=-1, keepdim=True)
@@ -27,25 +32,3 @@ def householder_rotation(x, v1, v2):
     v1Tv2 = batch_dot(v1, v2)
     return x - 2 * v1Tx * v1 - 2 * v2Tx * v2 + 4 * v1Tv2 * v2Tx * v1
 
-
-# Hyperbolic utils
-
-def tanh(x, clamp=15):
-    return x.clamp(-clamp, clamp).tanh()
-
-class Artanh(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x):
-        x = x.clamp(-1 + 1e-15, 1 - 1e-15)
-        ctx.save_for_backward(x)
-        #x = x.double()
-        return (torch.log_(1 + x).sub_(torch.log_(1 - x))).mul_(0.5).to(x.dtype)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        input, = ctx.saved_tensors
-        return grad_output / (1 - input ** 2)
-
-
-def artanh(x):
-    return Artanh.apply(x)
