@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from models.base import KGEModel
 
 from manifolds import ManifoldParameter, Poincare
-from utils.math_utils import householder_reflection, householder_rotation
+from utils.euc_utils import householder_reflection, householder_rotation
 
 
 class KGEModelH(KGEModel):

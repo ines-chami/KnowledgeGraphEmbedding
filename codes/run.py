@@ -17,7 +17,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 
-from models import KGEModelE, KGEModelH, EUC_MODELS, HYP_MODELS
+from models import KGEModelE, KGEModelH, EUC_MODELS, HYP_MODELS, O2MEKGEModel, ONE_2_MANY_E_MODELS
 
 from dataloader import TrainDataset
 from dataloader import BidirectionalOneShotIterator
@@ -43,7 +43,7 @@ def parse_args(args=None):
 
     parser.add_argument('--data_path', type=str, default=None)
     parser.add_argument('--model', default='TransE', type=str)
-    parser.add_argument('--entity_embedding_multiple', type=int, default=1)
+    parser.add_argument('--entity_embedding_multiple', type=int, default=2)
     parser.add_argument('--relation_embedding_multiple', type=int, default=1)
 
     parser.add_argument('-n', '--negative_sample_size', default=128, type=int)
@@ -65,6 +65,9 @@ def parse_args(args=None):
     parser.add_argument('--dropout', default=0, type=float)
     parser.add_argument('--warm_up_steps', default=None, type=int)
     parser.add_argument('--p_norm', default=1, type=int, help='p norm for scoring function')
+
+    parser.add_argument('--nsib', default=1, type=int, help='number of siblings in one_to_many model')
+    parser.add_argument('--rho', default=10, type=float, help='softmin param. in one_to_many model')
 
     parser.add_argument('--save_checkpoint_steps', default=10000, type=int)
     parser.add_argument('--valid_steps', default=10000, type=int)
@@ -263,10 +266,13 @@ def main(args):
         ModelClass = KGEModelE
     elif args.model in HYP_MODELS:
         ModelClass = KGEModelH
+    elif args.model in ONE_2_MANY_E_MODELS:
+        ModelClass = O2MEKGEModel
     else:
         raise ValueError('model %s not supported' % args.model)
 
-    kge_model = ModelClass(
+    if ModelClass != O2MEKGEModel:
+        kge_model = ModelClass(
         model_name=args.model,
         nentity=nentity,
         nrelation=nrelation,
@@ -277,6 +283,21 @@ def main(args):
         entity_embedding_multiple=args.entity_embedding_multiple,
         relation_embedding_multiple=args.relation_embedding_multiple
     )
+    else:
+        kge_model = ModelClass(
+            model_name=args.model,
+            nentity=nentity,
+            nrelation=nrelation,
+            hidden_dim=args.hidden_dim,
+            gamma=args.gamma,
+            p_norm=args.p_norm,
+            dropout=args.dropout,
+            entity_embedding_multiple=args.entity_embedding_multiple,
+            relation_embedding_multiple=args.relation_embedding_multiple,
+            nsiblings=args.nsib,
+            rho=args.rho
+        )
+
 
     logging.info('Model Parameter Configuration:')
     for name, param in kge_model.named_parameters():

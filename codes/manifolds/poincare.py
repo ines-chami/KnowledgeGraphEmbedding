@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import torch
 
-from utils.math_utils import artanh, tanh
+from utils.hyp_utils import artanh, tanh
 from .base import Manifold
 
 

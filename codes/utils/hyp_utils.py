@@ -48,17 +48,17 @@ def arcosh(x):
     return Arcosh.apply(x)
 
 def hyp_distance(x, y):
-    x2 = torch.sum(x * x, dim=1, keepdim=True)
-    y2 = torch.sum(y * y, dim=1, keepdim=True)
-    xTy = torch.sum(x * y, dim=1, keepdim=True)
+    x2 = torch.sum(x * x, dim=-1, keepdim=True)
+    y2 = torch.sum(y * y, dim=-1, keepdim=True)
+    xTy = torch.sum(x * y, dim=-1, keepdim=True)
     num = x2 + y2 - 2 * xTy
     den = (1 - x2) * (1 - y2)
     return arcosh(1 + 2 * num / den.clamp_min(MIN_NORM))
 
 def mobius_add(x, y):
-    x2 = x.pow(2).sum(dim=1, keepdim=True)
-    y2 = y.pow(2).sum(dim=1, keepdim=True)
-    xy = (x * y).sum(dim=1, keepdim=True)
+    x2 = x.pow(2).sum(dim=-1, keepdim=True)
+    y2 = y.pow(2).sum(dim=-1, keepdim=True)
+    xy = (x * y).sum(dim=-1, keepdim=True)
     num = (1 + 2 * xy + y2) * x + (1 - x2) * y
     denom = 1 + 2 * xy + x2 * y2
     return num / denom.clamp_min(MIN_NORM)

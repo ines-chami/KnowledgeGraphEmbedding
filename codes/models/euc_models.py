@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 from models.base import KGEModel
 from utils.euc_utils import householder_reflection, householder_rotation
-from utils.hyp_utils import expmap, mobius_add, hyp_distance
+from utils.hyp_utils import expmap0, mobius_add, hyp_distance
 
 class KGEModelE(KGEModel):
     """
@@ -171,7 +171,9 @@ class KGEModelE(KGEModel):
         else:
             queries = mobius_add(relation, head)
             candidates = tail
-        return self.gamma.item() - hyp_distance(queries, candidates) ** 2
+
+        score =  self.gamma.item() - hyp_distance(queries, candidates) ** 2
+        return score.squeeze(2)
 
     def TransE(self, head, relation, tail, mode):
         if mode == 'head-batch':
